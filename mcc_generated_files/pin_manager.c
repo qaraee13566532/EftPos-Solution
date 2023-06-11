@@ -70,7 +70,7 @@ void PIN_MANAGER_Initialize (void)
      * Setting the GPIO Direction SFR(s)
      ***************************************************************************/
     TRISA = 0x0A44;
-    TRISB = 0x0EA3;
+    TRISB = 0x0E8F;
     TRISC = 0xD038;
     TRISD = 0x000C;
 
@@ -107,11 +107,10 @@ void PIN_MANAGER_Initialize (void)
     SYSTEM_RegUnlock(); // unlock PPS
     RPCONbits.IOLOCK = 0;
 
-    RPOR1bits.RP5R = 0x0006;    //RA4->UART3:U3TX
-    RPOR1bits.RP8R = 0x0009;    //RB2->SPI2:SCK2OUT
-    RPOR2bits.RP9R = 0x0008;    //RB3->SPI2:SDO2
-    RPINR11bits.SDI2R = 0x0007;    //RB1->SPI2:SDI2
+    RPOR2bits.RP11R = 0x0004;    //RB5->UART2:U2TX
+    RPINR9bits.U2RXR = 0x000C;    //RB7->UART2:U2RX
     RPINR8bits.U3RXR = 0x0018;    //RA9->UART3:U3RX
+    RPOR1bits.RP5R = 0x0006;    //RA4->UART3:U3TX
 
     RPCONbits.IOLOCK = 1; // lock   PPS
     SYSTEM_RegLock(); 

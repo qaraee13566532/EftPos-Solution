@@ -51,17 +51,13 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "tmr1.h"
-#include "watchdog.h"
-#include "uart3.h"
-#include "memory/flash.h"
 #include "interrupt_manager.h"
 #include "exceptions.h"
 #include "uart2.h"
-#include "usb/usb.h"
-#include "adc1.h"
-#include "rtcc.h"
-#include "ext_int.h"
-#include "spi2.h"
+#include "uart3.h"
+#include "watchdog.h"
+#include "swuart.h"
+#include "memory/flash.h"
 #ifndef _XTAL_FREQ
 #define _XTAL_FREQ  24000000UL
 #endif

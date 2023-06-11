@@ -15,14 +15,14 @@ extern int32_t ADC_DATA;
 extern int32_t  SavedOffset[2]  __attribute__ ((persistent));
 
 extern bool    Power_Save_Flag,Onoff_Flag,NoCalibrate,WeightCalculated,
-               ClFlag,OnOff_State,Run_Flag,EnableLedShow,AddToList;
+               ClFlag,OnOff_State,Run_Flag,EnableLedShow,AddToList,LockMode;
 extern APP_DATA appData;
 extern uint16_t Generic_Counter2,Drift_Counter,beez_time;
 extern uint32_t in_data,Power_Save_Counter,Generic_Counter3,Plu_Unit_Price;
 extern uint32_t ReadBuffer[512];
 
 extern  const uint16_t  STABLE_TIME[3];
-extern  float ZeroCheck;
+extern  double ZeroCheck;
 extern  const uint16_t  DivitionTable[13];
 
 extern uint32_t Change_To_long(uint8_t Buf[10]);
@@ -52,11 +52,19 @@ uint32_t RealNumber( uint32_t Number,uint8_t Lid)
 
 
 
-int32_t N_Round ( int32_t Input ,uint8_t Lid)
+int32_t N_Round ( double Input ,uint8_t Lid)
 {
+    double halfDiv=0,fullDiv=0;
     uint32_t MaxCapacity=RealNumber(CalibrationParametes.CalibParameter[Lid].Max_weight_P2,Lid);
+    int32_t val=Input;
 //	if(MaxCapacity<(uint32_t)100000)
 //	{
+        if(WeightStruc[Lid].Divition==1)
+        {
+            return (int32_t) (Input+(double)0.5);
+        }
+        else
+            Input = (int32_t) Input;
 		if(One_Gram==0)
 		{
 /*			if(WeightStruc[Lid].Divition<5)
@@ -85,7 +93,9 @@ int32_t N_Round ( int32_t Input ,uint8_t Lid)
 			}
 			else
 			{*/
-                
+         //   if(WeightStruc[Lid].Divition>1)
+         //   {
+
 				if((int32_t)Input<=(int32_t)(CalibrationParametes.CalibParameter[Lid].Max_weight_P1))
 				{
                     WeightStruc[Lid].Divition=DivitionTable[CalibrationParametes.CalibParameter[Lid].Divition_Index_P1];
@@ -98,9 +108,15 @@ int32_t N_Round ( int32_t Input ,uint8_t Lid)
                     WeightStruc[Lid].W2_Flag=1;
                     WeightStruc[Lid].W1_Flag=0;
 				}	
-                Input = ((Input+WeightStruc[Lid].Divition/2)/WeightStruc[Lid].Divition)*WeightStruc[Lid].Divition;
+                val = ((val+WeightStruc[Lid].Divition/2)/WeightStruc[Lid].Divition)*WeightStruc[Lid].Divition;
+                //Input=((Input+halfDiv)/fullDiv)*fullDiv;
                 
 		//	}				
+        //    else
+        //    {
+           //     WeightStruc[Lid].W1_Flag=1;
+           //     WeightStruc[Lid].W2_Flag=0;
+           // }
 		}
 		else
 		{
@@ -114,18 +130,162 @@ int32_t N_Round ( int32_t Input ,uint8_t Lid)
 		WeightStruc[Lid].W1_Flag=1;
 		WeightStruc[Lid].W2_Flag=0;
 	}	*/
-	if(WeightStruc[Lid].Divition==1)
+	/*if(WeightStruc[Lid].Divition==1)
 	{
 		if(mylabs(Input)<2)
 			Input=0;
-	}	
-	return Input;
+	}*/	
+	return val;
 }
+
+
+
+
+extern fir_t fir_ftr;
+
+void fir_create(fir_t *context, float *filter_coeff, uint32_t filter_size, float gain, uint32_t sample_time)
+{
+    context->size = filter_size;
+    context->gain = gain;
+    free(context->tab);
+    context->tab = (int32_t*)malloc(filter_size * sizeof(int32_t));
+    context->coeff = filter_coeff;
+    context->index = 0;
+    context->filtered = 0;
+    context->sample_time = sample_time;
+    context->last_time = 0;
+}
+
+void fir_filter(fir_t *context, int32_t input)
+{
+    int32_t sum = 0;
+    int16_t i=0;
+    context->tab[context->index] = input;
+    for (i = 0; i < context->size; i++)
+    {
+      sum += context->coeff[i] * context->tab[(i + context->index) % context->size];
+    }
+    context->index = (context->index + 1) % context->size;
+    context->filtered = (int32_t)(sum * context->gain);
+}
+
+
+
+void Calculate_Weight(uint8_t Lid)
+{
+    uint8_t LoopCnt;
+    uint8_t gfilter=15;
+    double Res=0;
+    static double filterdWeight[2][15];
+    static double maxW,upmaxW;
+    Res=WeightStruc[Lid].ADC_WITHOUT_OFFSET;
+    Res= (Res*CalibrationParametes.CalibParameter[Lid].W_factor.factor);
+    WeightStruc[Lid].Weight=Res;
+    
+    if(mylabs(WeightStruc[Lid].Weight-WeightStruc[Lid].FilterTempWeight)<2*WeightStruc[Lid].Divition)
+    {
+        LoopCnt=gfilter-1;
+        do
+        {
+            filterdWeight[Lid][LoopCnt]=filterdWeight[Lid][LoopCnt-1];
+            LoopCnt--;
+        }while(LoopCnt>0);
+        filterdWeight[Lid][0]=Res;
+    
+        maxW=0;
+        for(LoopCnt=0;LoopCnt<gfilter;LoopCnt++)
+            maxW+=filterdWeight[Lid][LoopCnt];
+        maxW/=(double)gfilter;
+        WeightStruc[Lid].Round_Weight=N_Round(maxW,Lid);
+        
+       /* maxW=filterdWeight[Lid][0];
+        for(LoopCnt=0;LoopCnt<gfilter;LoopCnt++)
+            if(maxW<filterdWeight[Lid][LoopCnt])
+                maxW=filterdWeight[Lid][LoopCnt];
+        
+        if(labs(maxW-upmaxW)>0.9)
+        {
+            upmaxW=maxW;
+            WeightStruc[Lid].Round_Weight=N_Round(maxW,Lid);
+        }
+        else
+            WeightStruc[Lid].Round_Weight=N_Round(WeightStruc[Lid].Round_Weight,Lid);*/
+        if(WeightStruc[Lid].Round_Weight==100)
+            WeightStruc[Lid].Round_Weight=100;
+    }
+    else
+    {
+        WeightStruc[Lid].Round_Weight=N_Round(Res,Lid);
+        WeightStruc[Lid].FilterTempWeight=Res;
+        for(LoopCnt=0;LoopCnt<gfilter;LoopCnt++)
+            filterdWeight[Lid][LoopCnt]=Res;
+    }
+ }
+ 
+/*
+
+void Calculate_Weight(uint8_t Lid)
+{
+    uint8_t LoopCnt=Fi_Ind-1;
+    double Res=0;
+    static int32_t AdcArray[2][21];
+    int32_t minadc,maxadc;
+    do
+    {
+        AdcArray[Lid][LoopCnt]=AdcArray[Lid][LoopCnt-1];
+        LoopCnt--;
+    }while(LoopCnt>0);
+    AdcArray[Lid][0]=WeightStruc[Lid].ADC_WITHOUT_OFFSET;
+    maxadc=minadc=AdcArray[Lid][0];
+    for(LoopCnt=0;LoopCnt<Fi_Ind;LoopCnt++)
+    {
+        if(maxadc<AdcArray[Lid][LoopCnt])
+            maxadc=AdcArray[Lid][LoopCnt];
+        if(minadc>AdcArray[Lid][LoopCnt])
+            minadc=AdcArray[Lid][LoopCnt];
+    }
+    //Res=(maxadc+minadc)/2;
+    Res=maxadc;
+    //fir_filter(&fir_ftr,WeightStruc[Lid].ADC_WITHOUT_OFFSET);
+    Res= (Res*CalibrationParametes.CalibParameter[Lid].W_factor.factor);
+    WeightStruc[Lid].Weight=Res;
+    WeightStruc[Lid].Round_Weight=N_Round(Res,Lid);
+ }
+ */
+
+
+/*
+void Calculate_Weight(uint8_t Lid)
+{
+    uint8_t LoopCnt=Fi_Ind-1;
+    double Res=0;
+    static int32_t AdcArray[2][21];
+    do
+    {
+        AdcArray[Lid][LoopCnt]=AdcArray[Lid][LoopCnt-1];
+        LoopCnt--;
+    }while(LoopCnt>0);
+    AdcArray[Lid][0]=WeightStruc[Lid].ADC_WITHOUT_OFFSET;
+    for(LoopCnt=0;LoopCnt<Fi_Ind;LoopCnt++)
+        Res+=AdcArray[Lid][LoopCnt];
+    Res/=Fi_Ind;
+    //WeightStruc[Lid].Weight= (Res*CalibrationParametes.CalibParameter[Lid].W_factor.factor);
+    fir_filter(&fir_ftr,WeightStruc[Lid].ADC_WITHOUT_OFFSET);
+ //   Res=fir_ftr.filtered;
+    WeightStruc[Lid].Weight= ((double)fir_ftr.filtered*CalibrationParametes.CalibParameter[Lid].W_factor.factor);
+ }
+ */
+
+
+ /*
 
 void Calculate_Weight( uint8_t Lid  )
 {
-	WeightStruc[Lid].Weight= ((float)WeightStruc[Lid].ADC_WITHOUT_OFFSET*CalibrationParametes.CalibParameter[Lid].W_factor.factor);
+//	WeightStruc[Lid].Weight= ((double)WeightStruc[Lid].ADC_WITHOUT_OFFSET*CalibrationParametes.CalibParameter[Lid].W_factor.factor+(double)0.5);
+	WeightStruc[Lid].Weight= ((double)WeightStruc[Lid].ADC_WITHOUT_OFFSET*CalibrationParametes.CalibParameter[Lid].W_factor.factor);
 }
+*/
+
 
 uint8_t Get_Weight (uint8_t Lid)
 {
@@ -155,7 +315,7 @@ uint8_t Get_Weight (uint8_t Lid)
 
 void Check_Stable( uint8_t Lid )
 {
-    if(CalibrationParametes.CalibParameter[Lid].Stable_Extent_Index==0)
+    if(CalibrationParametes.CalibParameter[Lid].Stable_Extent_Index==0 || LockMode==true)
 	{
         WeightStruc[Lid].Stable_Flag=1;
         return ;
@@ -170,13 +330,18 @@ void Check_Stable( uint8_t Lid )
 	{
 		if(Generic_Counter2>=((CalibrationParametes.CalibParameter[Lid].Stable_Time_Index+1)*SAMPLE_TIME_MILI_SECONT))
 			if(OnOff_State && Run_Flag)
-				WeightStruc[Lid].Stable_Flag=1;
+			{
+                WeightStruc[Lid].Stable_Flag=1;
+                if(CalibrationParametes.CalibParameter[Lid].Lock_Functionality>0)
+                    LockMode=true;
+            }
 	}
 }	
    
 void FilterWeight(uint8_t Lid)
 {
-	uint8_t LoopCnt,Sig_Cnt;
+/*	uint8_t LoopCnt,Sig_Cnt;
+    double average=0;
     if(CalibrationParametes.CalibParameter[Lid].Filter_Index)
     {
         Fi_Ind=CalibrationParametes.CalibParameter[Lid].Filter_Index;
@@ -189,12 +354,16 @@ void FilterWeight(uint8_t Lid)
                 LoopCnt--;
             }while(LoopCnt>0);
             WeightStruc[Lid].signal[0]=WeightStruc[Lid].Weight;
-            WeightStruc[Lid].Round_Weight=0;
+        //    WeightStruc[Lid].Round_Weight=0;
             for(LoopCnt=0;LoopCnt<Fi_Ind;LoopCnt++)
-                WeightStruc[Lid].Round_Weight+=WeightStruc[Lid].signal[LoopCnt];
-            WeightStruc[Lid].Round_Weight/=Fi_Ind;
+            //    WeightStruc[Lid].Round_Weight+=WeightStruc[Lid].signal[LoopCnt];
+                average+=WeightStruc[Lid].signal[LoopCnt];
+       //     WeightStruc[Lid].Round_Weight/=Fi_Ind;
+            average/=Fi_Ind;
             if(appData.state!=APP_STATE_CALIBRATION)
-                WeightStruc[Lid].Round_Weight=N_Round(WeightStruc[Lid].Round_Weight,Lid);
+                WeightStruc[Lid].Round_Weight=N_Round(average,Lid);
+            else
+                WeightStruc[Lid].Round_Weight=WeightStruc[Lid].Weight;
             WeightStruc[Lid].FilterTempWeight=WeightStruc[Lid].Weight;
         }
         else
@@ -214,7 +383,7 @@ void FilterWeight(uint8_t Lid)
             WeightStruc[Lid].Round_Weight=N_Round(WeightStruc[Lid].Weight,Lid);
         else
             WeightStruc[Lid].Round_Weight=WeightStruc[Lid].Weight;
-    }
+    }*/
 }
 
 void ShowZero( uint8_t Lid )
@@ -248,11 +417,12 @@ uint8_t Adjust_Zero ( uint8_t  Start,uint8_t ZeroTrack,uint8_t bypass,uint8_t Li
         {
             if(WeightStruc[Lid].Stable_Flag || Start)
             {
-                if(WeightStruc[Lid].Tare_Weight==0 || ZeroTrack==0)
+                if(WeightStruc[Lid].Tare_Weight==0 || ZeroTrack==1)
                 {
                     WeightStruc[Lid].offset=WeightStruc[Lid].ADC_DATA;
                     WeightStruc[Lid].Tare_Weight=0;
                     WeightStruc[Lid].Net_Flag=0;
+                           // beez_time=50;
                     return 0;
                 }
             }
@@ -264,10 +434,10 @@ uint8_t Adjust_Zero ( uint8_t  Start,uint8_t ZeroTrack,uint8_t bypass,uint8_t Li
     }
 }
 
-
+/*
 void Del_Drift( uint8_t Lid )
 {
-	if(mylabs(WeightStruc[Lid].Weight)<WeightStruc[Lid].Divition && WeightStruc[Lid].Weight!=0)
+	if(mylabs(WeightStruc[Lid].Weight)<=WeightStruc[Lid].Divition && WeightStruc[Lid].Weight!=0)
 		WeightStruc[Lid].Drift_Flag=1;
 	else
 	{
@@ -277,18 +447,68 @@ void Del_Drift( uint8_t Lid )
 	if(WeightStruc[Lid].Drift_Flag && WeightStruc[Lid].Drift_Counter>= 2000)
 		Adjust_Zero(0,1,0,Lid);	
 }
+*/
+
+ 
+void Del_Drift( uint8_t Lid )
+{
+    double Margin;
+    Margin = CalibrationParametes.CalibParameter[Lid].W_factor.factor;
+    
+    Margin=(int)((WeightStruc[Lid].Divition/(Margin))*0.7);
+	if(mylabs(WeightStruc[Lid].ADC_WITHOUT_OFFSET)<=Margin && WeightStruc[Lid].ADC_WITHOUT_OFFSET!=0 && WeightStruc[Lid].Net_Flag==false)
+		WeightStruc[Lid].Drift_Flag=1;
+	else
+	{
+		WeightStruc[Lid].Drift_Flag=0;
+		WeightStruc[Lid].Drift_Counter=0;
+	}
+	if(WeightStruc[Lid].Drift_Flag && WeightStruc[Lid].Drift_Counter>= 500)
+	{
+        Adjust_Zero(0,1,0,Lid);	
+        WeightStruc[Lid].Drift_Flag=0;
+        Drift_Counter=0;
+
+    }
+}
 
 uint8_t Weight_Tasks( uint8_t Lid )
 {
 	uint8_t LoopCnt;
+    int32_t TempCalc1,TempCalc2;
     if(Get_Weight(Lid))
 	{
 		Check_Stable(Lid);
-        WeightStruc[Lid].Round_Weight=WeightStruc[Lid].Weight;
-        FilterWeight(Lid);
+     //   WeightStruc[Lid].Round_Weight=WeightStruc[Lid].Weight;
+    //    FilterWeight(Lid);
 		ShowZero(Lid);
 		Del_Drift(Lid);
-    	WeightStruc[Lid].View_Weight=WeightStruc[Lid].Round_Weight-WeightStruc[Lid].Tare_Weight;
+        
+        
+        if(CalibrationParametes.CalibParameter[Lid].Filter_Index==0)
+            LockMode=false;
+        if(LockMode==false)
+            WeightStruc[Lid].View_Weight=WeightStruc[Lid].Round_Weight-WeightStruc[Lid].Tare_Weight;
+        else
+        {
+            TempCalc1=WeightStruc[Lid].View_Weight;
+            TempCalc2=WeightStruc[Lid].Round_Weight;
+            TempCalc1=TempCalc1-TempCalc2;
+            TempCalc1=TempCalc1+WeightStruc[Lid].Tare_Weight;
+            if(TempCalc1<0)
+                TempCalc1*=-1;
+            if(TempCalc1>(uint16_t)(CalibrationParametes.CalibParameter[Lid].Number_Of_Locked_Divisions*WeightStruc[Lid].Divition))
+            {
+                LockMode=false;
+                Generic_Counter2=0;
+                WeightStruc[Lid].Temp_Weight=0;
+                WeightStruc[Lid].Stable_Flag=0;
+            }
+        }
+        
+        
+        
+    	//WeightStruc[Lid].View_Weight=WeightStruc[Lid].Round_Weight-WeightStruc[Lid].Tare_Weight;
 
         if(WeightStruc[0].Round_Weight>(int32_t)(RealNumber(CalibrationParametes.CalibParameter[0].Max_weight_P2,0)+9*DivitionTable[CalibrationParametes.CalibParameter[0].Divition_Index_P2]) )
             WeightStruc[0].Over_Flag=true;
@@ -446,6 +666,7 @@ uint8_t  CalibrateService( uint8_t Lid )
                     SendTakinFuncrions(0x01,0x23,0x30);
                     appData.state=APP_STATE_NORMAL_MODE;
                     NoCalibrate=false;
+                    LockMode=false;
                     return 2;
                 }
             }

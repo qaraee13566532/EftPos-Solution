@@ -45,30 +45,21 @@
 #include "pin_manager.h"
 #include "clock.h"
 #include "system.h"
-#include "uart3.h"
-#include "uart2.h"
-#include "rtcc.h"
-#include "ext_int.h"
 #include "tmr1.h"
-#include "memory/flash.h"
 #include "interrupt_manager.h"
 #include "exceptions.h"
-#include "usb/usb.h"
-#include "adc1.h"
-#include "spi2.h"
+#include "uart2.h"
+#include "uart3.h"
+#include "swuart.h"
+#include "memory/flash.h"
 
 void SYSTEM_Initialize(void)
 {
     PIN_MANAGER_Initialize();
-    CLOCK_Initialize();
     INTERRUPT_Initialize();
+    CLOCK_Initialize();
     UART2_Initialize();
-    USBInitialize();
-    SPI2_Initialize();
     UART3_Initialize();
-    ADC1_Initialize();
-    RTCC_Initialize();
-    EXT_INT_Initialize();
     TMR1_Initialize();
     INTERRUPT_GlobalEnable();
 }

@@ -3,28 +3,28 @@
 #include "app.h"
 
 
-bool Count_Flag,Count_Flag,Kg_Flag,Lb_Flag,Bat_Flag,Send_Flag,Recive_Flag,Onoff_Flag,Func_Flag,WeightCalculated,
+bool Count_Flag,Count_Flag,Kg_Flag,Lb_Flag,Bat_Flag,Send_Flag,Recive_Flag,Onoff_Flag,Func_Flag,WeightCalculated,sendSensitive,sendNormal,startSave,
      Send_Led,Show_Back_Zero,Show_Decimal_Point,Show_Sign,key_pressed,OnOff_State,StartToTransmition,Clock_Source,PowerSaver,disp_mask,Power_Save_Flag,
-     Save_Cal_Paramerets_Flag,Run_Flag,Mask_Weight,STCC,StartRelay,direct_vendor,Numeral_Vendor,StartResolutionLog,
+     Save_Cal_Paramerets_Flag,Run_Flag,Mask_Weight,STCC,StartRelay,direct_vendor,Numeral_Vendor,StartResolutionLog,LockMode,sensitiveDataCompleted,isSensitiveScaleZero,
      ADDFIX_direct,ADDFIX_Numeral,Shift_Flag,ShowDp,Cash_Open,AddToList,Mem_Flag,Payback_Flag,SentFlag,Dc_Power_Good,Bat_Power_Good,Shut_Down,Bat_Blink,
-     USBHostBusIsActived,HidReadEnableFlag, GetHidPacket, En_Write_Flag,Net_Send_Flag ,Net_Recive_Flag,En_Setup_Flag,AutoSend,ClFlag,ErrorCalibrationTimout;
+     USBHostBusIsActived,HidReadEnableFlag, GetHidPacket, price_received,
+     En_Write_Flag,Net_Send_Flag ,Net_Recive_Flag,En_Setup_Flag,AutoSend,ClFlag,ErrorCalibrationTimout,packServiced,requestZero;
 
-float ZeroCheck;
+double ZeroCheck;
 
-struct WStructure WeightStruc[2];
 
 union   IntChar  EE_DATA_INT,CRC;
 
+union SetParameter SystemParm;
+
 int32_t    ADC_DATA,indata;
-
-
 
 
 uint64_t        Total_1,Total_2,Total_3,Total_4,Total_5,Total_6,Total_7,Total_8;
 
 uint32_t        in_data,Power_Save_Counter,CalcPsTime,Generic_Counter3,
 				Tare_Weight_1,Tare_Weight_2,Pre_Weight_1,Pre_Weight_2,Current_Time,Current_Date,Total_Add,Count_Add,
-				Pass,EmptyAddressBarcodeWrite,TempDateTimeLong,LoadFactorDate,
+				Pass,EmptyAddressBarcodeWrite,TempDateTimeLong,LoadFactorDate,total_price,Price1,
                 TempDateStartReport,TempDateEndReport,ADC_Ch_SW,
 				TempRowDate,NetworkTimeout,WorkingTime,
 				Mem_Code,Plu_Unit_Price,Total_Price[MAX_CUSTOMER],
@@ -48,27 +48,20 @@ uint8_t 	    Mask_Number,DispPos,DispData[6],EE_DATA_BYTE,Coder_Step,TempCodeBuf
 				Calib_Unit_Index,Fi_Ind,Show_Error_flag,Show_Error_Value,TempCnt,DisplayUpdateTime,
 				Show_Front_Zero,Prog_State,Calc_Operate,Normal_State,RetNormal_State,ResLogCounter,
 				Divition_Index,Calculate_State,GetAdcSample,WriteMessageBuffer[MAX_MESSAGE],
-				Year,Month,Day,Hour,Min,Second,HidByteCounter,CurserByte,CurserPos,
+				Year,Month,Day,Hour,Min,Second,HidByteCounter,CurserByte,CurserPos,TempBuffer[10],
 				IAC,KeyState,KeyCnt[56],key_np,FontId,ExitReturnState,GetDateTimeAppReturnState,
 				Ser_Write_Buf[SER_MAX_WRITE],Ser_Read_Buf[SER_MAX_READ],serbuf,TestFlag,
 				Prn_Write_Buf[PRN_MAX_WRITE],Prn_Read_Buf[PRN_MAX_READ],prnbuf,DispStep,UniCnt,PrnCnt,
-				Digit_Index,StringLenght,ReportMode,MsgTableSelect,TcpSendCnt,DataPack[350],
+				Digit_Index,StringLenght,ReportMode,MsgTableSelect,TcpSendCnt,DataPack[200],sensitiveScaleDataPack[50],sPack[50],
 				Sync_Baud_Flag,CountDown,RetKeCode,PrnToBuff[MAX_PRINTER_CHAR],
-				Stop_Vendor[MAX_CUSTOMER],Coustomer_Id,Sale_Row[MAX_CUSTOMER],SwitchWeight,
-				Sales_Modes[MAXROW][MAX_CUSTOMER],Sale_Rows[MAXROW][MAX_CUSTOMER],
 				SetupCnt,Mem_Index,BatLowDetect,Recive_Counter,Refresh_Set,ErrorCof,One_Gram,PrnPos,
 				OutPut[MAX_MESSAGE],PackState,Encryption_Key,SetBluetoothPincodeFlg,Set,GXPos,LcdErrorTimeoutCounter,RtcErrorTimeoutCounter,
-                Sales_PluType[MAXROW][MAX_CUSTOMER],Sales_PluUnit[MAXROW][MAX_CUSTOMER],Sales_SaleOff[MAXROW][MAX_CUSTOMER],
                 Sales_PluTax[MAXROW][MAX_CUSTOMER],TempDay,TempMonth,TempYear,TempHour,TempMin,TempSecond,Point_Index,CalibProcess;
 
 bool            TheFirstEnterToMenu,DoScanFlag,FindBarcodeFlag,DateReturnStatus,
                 FindEmptyLocation,ModeSelect,ShowCurser,SelectDateTime,MayadinTotal,
                 DateAccept,UserAccept,FirstWriteHeader,EnableLedShow,NetWorkSendApp,NetDeviceConnected,NoCalibrate;
 uint32_t ReadBuffer[512];
-union GTempMemory GlobalTempMemory;
-
-
-APP_DATA appData;
 
 uint8_t  WriteBuffer[256];
 uint8_t  *PByteBuffer;
@@ -77,8 +70,7 @@ uint16_t *PIntBuffer;
 const uint8_t * FontAddress;
 
 uint8_t  BarcodeTempReciveCode[MAX_BARCODE_LENGHT];
-union PluBarCode  BarcodeData,TempBarcodeData;
-const char          *netName, *netBiosName;
+
 
 
 uint8_t  ResetCause  __attribute__ ((persistent));
@@ -95,11 +87,7 @@ int8_t mm[13];
 int8_t ss[13];
 
 uint32_t FlashData[4];
-union PluDataInfo KalaInfo,TempKalaInfo;
-union SetParameter SystemParm;
-union CalParm CalibrationParametes;
-union SellDetailData SellDataRow;
-union SetVariable SystemVariables;
+
 
 int8_t datesmon,datemmon,datesday,datemday;
 
@@ -109,6 +97,59 @@ const uint8_t BAR_LABLE_ITEM_BUF[] ={0,1,2,3,5,6,7,8,9,10,11,12};
 const uint8_t MAXBARLENGHT[] ={sizeof(BAR_ROW_ITEM_BUF),sizeof(BAR_END_ITEM_BUF),sizeof(BAR_LABLE_ITEM_BUF)};
 const uint8_t Xposi[18]={100,100,140,100,105,105,90,90,115,115,100,115,115,120,115,120,100,100};
 const uint8_t BAR_TYPE_LIMIT[] ={12,12,12,8,11,22,14,16,25,20,16};
+
+
+const unsigned char ID_array[29]={'R','Q'
+	,'P','R','0','0','6','0','0','0','0','0','0','A','M'
+	,'C','U','0','0','3','3','6','4','P','D','0','0','1','1'};	
+
+const unsigned char  Saman_Data[96]={0x82,0x0A,0xD4,0xE4,0xC7,0xD3,0xE5,0x3A,0x31,0x30,0x30,0x0A  //????? : 100                           
+													 ,0x83,0x01,0x01,0x84,0x01,0x03,0x85,0x01,0x00  //?????? ???? ??
+													 ,0x82,0x01,0x30,0x83,0x01,0x30,0x84,0x01,0x30,0x85,0x01
+	                         ,0x30,0x86,0x01,0x30,0x87,0x01,0x30,0x88,0x01,0x30  //????? ????? ?? ?? 0 ?? ??? ????? ??? ???
+													 ,0xA2,0x30,0xA1,0x0C,0x81,0x05,0xD4,0xE4,0xC7,0xD3,0xE5,0x82,0x03,0x31,0x30,0x30 //????? : 100 
+                           ,0xA1,0x11,0x81,0x06,0x44,0x6C,0x6C,0x56,0x65,0x72
+                           ,0x82,0x07,0x32,0x2E,0x31,0x2E,0x30,0x2E,0x31
+                           ,0xA1,0x0D,0x81,0x06,0x50,0x72,0x67,0x56,0x65,0x72
+                           ,0x82,0x03,0x31,0x2E,0x30
+                           ,0x31,0xC1,0xE7,0x04};
+
+float low_pass_coeff[] = {
+    
+    
+  0.007231119,
+  0.009833168,
+  0.012771189,
+  0.016005623,
+  0.019482260,
+  0.023133397,
+  0.026879696,
+  0.030632679,
+  0.034297764,
+  0.037777714,
+  0.040976339,
+  0.043802294,
+  0.046172761,
+  0.048016870,
+  0.049278658,
+  0.049919435,
+  0.049919435,
+  0.049278658,
+  0.04801687,
+  0.046172761,
+  0.043802294,
+  0.040976339,
+  0.037777714,
+  0.034297764,
+  0.030632679,
+  0.026879696,
+  0.023133397,
+  0.01948226,
+  0.016005623,
+  0.012771189,
+  0.009833168,
+  0.007231119
+};
 
 
 const uint8_t disp_char[10]      = {_0,_1,_2,_3,_4,_5,_6,_7,_8,_9};
@@ -161,7 +202,7 @@ const uint16_t  DivitionTable[13]   = {1,2,5,10,20,25,50,100,200,500,1000,2000,5
 const uint8_t   Zero_Scope[4]={2,4,10,20};
 const uint8_t   Zero_Start[4]={2,4,10,20};
 
-const float     Zero_Track[7]={0.5,1,1.5,2,2.5,3,5};
+const double     Zero_Track[7]={0.5,1,1.5,2,2.5,3,5};
 
 const uint16_t  STABLE_EXTENT[3]={STABLE_EXTENT_LOW,STABLE_EXTENT_MIDDLE,STABLE_EXTENT_HIGH};
 const uint16_t  STABLE_TIME[3]={STABLE_TIME_LOW,STABLE_TIME_MIDDLE,STABLE_TIME_HIGH};
@@ -372,7 +413,7 @@ PORTS_CHANNEL                           PortID[14]={  PORT_CHANNEL_E,PORT_CHANNE
                                                    };
 PORTS_BIT_POS                           BitPos[14]={  8,9,5,4,3,2,1,0,6,7,9,10,8,9 };
 */
-const float ResAdc[50]=
+const double ResAdc[50]=
 {
     200,
     190,

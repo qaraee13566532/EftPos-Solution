@@ -24,7 +24,7 @@ CLEAN_SUBPROJECTS=${CLEAN_SUBPROJECTS_${SUBPROJECTS}}
 
 
 # Project Name
-PROJECTNAME=pic32mm_test.X
+PROJECTNAME=Psp_Adapter.X
 
 # Active Configuration
 DEFAULTCONF=default

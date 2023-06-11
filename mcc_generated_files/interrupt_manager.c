@@ -55,11 +55,6 @@ void INTERRUPT_Initialize (void)
     // Enable Multi Vector Configuration
     INTCONbits.MVEC = 1;
     
-    //    USBI: USB
-    //    Priority: 1
-        IPC7bits.USBIP = 1;
-    //    Sub Priority: 0
-        IPC7bits.USBIS = 0;
     //    UERI: UART 2 Error
     //    Priority: 1
         IPC14bits.U2EIP = 1;
@@ -90,11 +85,6 @@ void INTERRUPT_Initialize (void)
         IPC14bits.U3RXIP = 1;
     //    Sub Priority: 0
         IPC14bits.U3RXIS = 0;
-    //    INT2I: External 2
-    //    Priority: 1
-        IPC1bits.INT2IP = 1;
-    //    Sub Priority: 0
-        IPC1bits.INT2IS = 0;
     //    TI: Timer 1
     //    Priority: 1
         IPC4bits.T1IP = 1;

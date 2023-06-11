@@ -63,12 +63,10 @@ extern uint8_t  GetAdcSample,keywptr,keyrptr,keybuff[KEY_MAX],key_no,Video_Ram_B
                 key_n,key_np,Key_Column_Counter,key_zero_time,last_sample,key_cnt,BitPos,CountDown,LcdErrorTimeoutCounter,RtcErrorTimeoutCounter,DispPos,TcpSendCnt;
 
 extern uint16_t CashCnt,LED_COUNTER,beez_time,CJ_CNT_ON,CJ_CNT_OFF,Drift_Counter,TimeDateCounter,ShledCnt;
-extern APP_DATA appData;
 extern uint32_t Power_Save_Counter,Generic_Counter3,Generic_Counter2,Plu_Unit_Price,Generic_Counter,NetworkTimeout,CalcPsTime,WorkingTime;
 extern uint8_t  DisplayUpdateTime,disp[DISP_NO] __attribute__ ((persistent));  
 extern union SetParameter SystemParm;
 extern bool     Cash_Open,EnableLedShow,Run_Flag,OnOff_State;
-extern struct WStructure WeightStruc[2];
 extern uint8_t  ResetCause  __attribute__ ((persistent));
 
 
@@ -250,58 +248,6 @@ void __attribute__ ((weak)) TMR1_CallBack(void)
     }
     else
         BUZZER=0;
-    
-    if(ResetCause==0xA3)
-    {
-        if(ShledCnt<=3000)
-            ShledCnt++;
-        if(ShledCnt>=3000)
-        {
-            if(Run_Flag)
-            {
-                if(OnOff_State==0)
-                    disp[0]|=POINT;
-                Show_Leds();
-            }
-        }
-    }
-    else
-    {
-        if(Run_Flag)
-        {
-            if(OnOff_State==0)
-                disp[0]|=POINT;
-            Show_Leds();
-        }
-    }
-    
-
-    Generic_Counter2++;
-    if(Generic_Counter2>30000) Generic_Counter2=0;
-    DisplayUpdateTime++;
-    if(DisplayUpdateTime==20)
-    {
-        UpdateDisplayData();
-        DisplayUpdateTime=0;
-    }
-    
-    if(Cash_Open)
-    {
-        if(CashCnt++>CASH_DELAY)
-        {
-            CashCnt=0;
-            Cash_Open=0;
-            CASH=0;
-        }
-    }
-    if(WeightStruc[0].Drift_Flag)
-        WeightStruc[0].Drift_Counter++;
-    else
-        WeightStruc[0].Drift_Counter=0;
-    if(WeightStruc[1].Drift_Flag)
-        WeightStruc[1].Drift_Counter++;
-    else
-        WeightStruc[1].Drift_Counter=0;
 }
       
 /*

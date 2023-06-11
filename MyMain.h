@@ -699,8 +699,8 @@
 // INTERNAL ADC CONSTANT -------------------------------------------------------
 #define MaxInternalAdcSample           15
 #define MAX_SAMPLE_TIME                300
-#define DC_FAIL_LEVEL                  2400 
-#define MIN_ACCEPTABLE_DC              2500 //0.364
+#define DC_FAIL_LEVEL                  1750 // 8v 
+#define MIN_ACCEPTABLE_DC              1950 // 9v 
 #define MIN_ACCEPTABLE_BAT             1150 //0.344
 #define BAT_FAIL_SURE_CNT              2*MAX_SAMPLE_TIME
 #define BAT_SHUTDOWN_CNT               2*MAX_SAMPLE_TIME
