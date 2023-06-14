@@ -48,7 +48,7 @@ void Load_Setting( void )
         SystemParm.Set_Parameter.Out_PosBaudRate=115200; 
         SystemParm.Set_Parameter.In_PosBaudRate=57600; 
         SystemParm.Set_Parameter.Out_EftPo_Type=0;     //for parsian output 
-        SystemParm.Set_Parameter.In_EftPo_Type=10;     //for cas input 
+        SystemParm.Set_Parameter.In_EftPo_Type=11;     //for cas input 
         SystemParm.Set_Parameter.Toman_Mode=0;          
         UpdateSetting();
     }

@@ -78,10 +78,14 @@ extern bool TakinTasks(uint8_t data);
 extern uint8_t DataPack[200];
 
 uint16_t update_crc(uint16_t crc_accum, unsigned char *data_blk_ptr, uint16_t data_blk_size,bool reflect_input,bool reflect_output);
-
+void generateMAC(uint8_t data[],uint8_t macc[],uint16_t messageLenght,uint64_t keyValue,uint64_t iv);
 
 const uint8_t * SepehrEft_1="TEJARAT_BANK020012345678";
 const uint8_t * SepehrEft_2="000002                        ";
+
+const uint8_t * samankish2_1="03003018008000048081000000";
+const uint8_t * samankish2_2="16240103231400033330303336340007312E332E322E30";
+
 
 const uint8_t * InputType="\r\n Input psp/device type : ";
 const uint8_t * OutputType="\r\n Output psp type : ";
@@ -90,10 +94,11 @@ const uint8_t * InputBaudrate="\r\n Input baudrate : ";
 const uint8_t * TomanMode="\r\n Toman Mode : ";
 const uint8_t * Active="Enable\r\n";
 const uint8_t * DeActive="Disable\r\n";
-const uint8_t * Psp[11]= {
+const uint8_t * Psp[12]= {
                             "Parsian",
                             "Asan Pardakht",
-                            "Saman Kish",
+                            "Saman Kish protocol 1",
+                            "Saman Kish protocol 2",
                             "Fanava",
                             "Pardakht Novin",
                             "Beh Pardakht",
@@ -816,7 +821,7 @@ void asan_pardakht(void)
 	Write_Serial_Buffer(0x0a);
 }
 
-void saman_kish(void)
+void saman_kish1(void)
 {
 	unsigned char  j=0,i;
 	unsigned long Price_b=0,Price_Length,Price=0,Packet_D_L;
@@ -865,6 +870,52 @@ void saman_kish(void)
 	for(i=21;i<96;i++){Write_Serial_Buffer(Saman_Data[i]);}//{Packet_Data[(39+j)+i-21]=Saman_Data[i];}
 
 }
+
+void saman_kish2(void)
+{
+	unsigned char  j=0,i,len=0;
+	unsigned long Price_b=0,Price_Length,Price=0,Packet_D_L;
+	unsigned char  Price_Array[15];
+    uint8_t data[50]={ 0x03,0x00,0x30,0x18,0x00,0x80,0x00,0x04,0x80,0x81,0x00,0x00,0x00,0x00,0x00,0x00,
+                        0x01,0x00,0x00,0x16,0x37,0x46,0x06,0x14,0x14,0x00,0x03,0x33,0x30,0x30,0x33,0x36,
+                        0x34,0x00,0x07,0x31,0x2e,0x33,0x2e,0x32,0x2e,0x30,0x00,0x00,0x00,0x00,0x00,0x00,
+                        0x00,0x00};
+    uint8_t Mac[8]={0,0,0,0,0,0,0,0};
+    uint64_t keyValue = 0x23ABE182CAB5647D;
+    for( i=0;i<15;i++)
+        Price_Array[i]=0;
+    if(SystemParm.Set_Parameter.Toman_Mode>0)
+    	Price=total_price*10;
+    else
+        Price=total_price;
+    total_price=Price;
+    for( i=12;i>0;i-- )	
+	{
+		Price_b=total_price%10;
+		Price_Array[i-1]=Price_b;
+		total_price/=10;				
+	}
+
+    for(j=0,i=0;j<12;j++)
+    {
+        if(j%2==0)
+        {
+            data[i+13]=Price_Array[j];
+            data[i+13]<<=4;
+        }
+        else
+        {
+            data[i+13]|=Price_Array[j];
+            i++;
+        }
+    }
+    generateMAC(data,Mac,42,keyValue,0);
+    for(i=0;i<8;i++)
+        data[42+i]=Mac[i];
+    for(i=0;i<50;i++)
+        Write_Serial_Buffer(data[i]);
+}
+
 /*
 void pardakht_novin(void)
 {
@@ -1027,112 +1078,14 @@ void fanava(void)
 	
 }
 
-/*
- 
-void parsian(void)
-{
-	unsigned char 	j,i,x;  
-	unsigned long int 	Price_b=0,Price=0;  
-	unsigned int  Price_Array[9];//={0x00};	
-    uint64_t encrypt_resualt=0,in_des=0,key_des=0;
 
-//    key_des=0x3132333435363738;
-    in_des=0x54454a415241545f;
-    key_des=0x3230303132333435;
-//    in_des =0x5f544152414a4554;
-    
-    encrypt_resualt=des(in_des,key_des,'e');
-    in_des=0x42414e4b30323030;
-//    in_des=0x303032304b4e4142;
-    
-    in_des=encrypt_resualt^in_des;
-    
-    encrypt_resualt=des(in_des,key_des,'e');
-    in_des=0x3132333435363738;
-//    in_des=0x3837363534333231;
-    in_des=encrypt_resualt^in_des;
-    
-    encrypt_resualt=des(in_des,key_des,'e');
-    in_des=0x3030303031323334;
-//    in_des=  0x3433323130303030;
-    in_des=encrypt_resualt^in_des;
-    
-    encrypt_resualt=des(in_des,key_des,'e');
-    in_des=0x3536373830303030;
-//    in_des=0x3030303038373635;
-    in_des=encrypt_resualt^in_des;
-    
-    encrypt_resualt=des(in_des,key_des,'e');
-    in_des=0x3032202020202020;
-//    in_des=  0x2020202020203230;
-    in_des=encrypt_resualt^in_des;
-    
-    encrypt_resualt=des(in_des,key_des,'e');
-    in_des=0x2020202020202020;
-//    in_des=0x2020202020202020;
-    in_des=encrypt_resualt^in_des;
-    
-    encrypt_resualt=des(in_des,key_des,'e');
-    in_des=0x2020202020202020;
-//    in_des=0x2020202020202020;
-    in_des=encrypt_resualt^in_des;
-    
-    encrypt_resualt=des(in_des,key_des,'e');
-    in_des=0x2020000000000000;
-//    in_des=  0x0000000000002020;
-    in_des=encrypt_resualt^in_des;
-    
-    encrypt_resualt=des(in_des,key_des,'e');
-
-    
-
-
-	for(j=0;j<9;j++)
-		Price_Array[j]=0;
-	j=0;
-    if(SystemParm.Set_Parameter.Toman_Mode>0)
-    	Price=total_price*10;
-    else
-        Price=total_price;
-	do
-	{
-		j++;		
-		Price=(Price/10);				
-	}while(Price>0);	
-
-	for( i=j;i>0;i-- )	
-	{
-		Price_b=total_price%10;
-		Price_Array[i-1]=Price_b;
-		total_price/=10;				
-	}
-	Write_Serial_Buffer(0x30);
-	Write_Serial_Buffer(0x30);
-	x=j+35;
-	Write_Serial_Buffer((x/10)| 0x30);
-	Write_Serial_Buffer((x%10)| 0x30);	 
-	for(i=0;i<2;i++)	{Write_Serial_Buffer(ID_array[i]);}
-	Write_Serial_Buffer(0x30);
-	x=0;
-	x=j+30;
-	Write_Serial_Buffer((x/10)| 0x30);
-	Write_Serial_Buffer((x%10)| 0x30);
-	for(i=2;i<15;i++) {Write_Serial_Buffer(ID_array[i]);}
-	Write_Serial_Buffer(0x30);
-	Write_Serial_Buffer(0x30);
-	Write_Serial_Buffer(( j | 0x30 ));	
-	for(i=0;i<j ;i++){Write_Serial_Buffer(Price_Array[i]|0x30);}	
-	for(i=15;i<29;i++){Write_Serial_Buffer(ID_array[i]);}
-}
- */
-
-void generateMAC(uint8_t data[],uint8_t macc[],uint16_t messageLenght,uint64_t keyValue)
+void generateMAC(uint8_t data[],uint8_t macc[],uint16_t messageLenght,uint64_t keyValue,uint64_t iv)
 {
     uint8_t index=0,dataindex=0,bcdIndex=0,loopNumber=0,innerLoop=0;
-    uint64_t XOred=0,processValue=0,outValue=0;
+    uint64_t XOred=0,processValue=0,outValue;
     uint16_t num;
     uint8_t processBuf[8];
-    
+    outValue=iv;
     num= (messageLenght % 8 == 0) ? messageLenght : (messageLenght + 8 - messageLenght % 8);
     loopNumber=num/8;
     for(index=0;index<loopNumber;index++)
@@ -1404,7 +1357,7 @@ void sepehr_saderat(void)
     data[len+1]=0;
     len+=2;
     key=0x3230303132333435;
-    generateMAC(data,Mac,len,key);
+    generateMAC(data,Mac,len,key,0);
     for(i=0;i<8;i++)
         data[len+i]=Mac[i];
     len+=8;
@@ -1424,19 +1377,22 @@ void SendPriceToEftPos(void)
             case 1 : // asan pardakht
                 asan_pardakht();
             break;
-            case 2 : // saman kish
-                saman_kish();
+            case 2 : // saman kish protocol 1
+                saman_kish1();
             break;
-            case 3 : // fanava kart
+            case 3 : // saman kish protocol 2
+                saman_kish2();
+            break;
+            case 4: // fanava kart
                 fanava();
             break;
-            case 4 : // pardakh novin
+            case 5 : // pardakh novin
                 pardakht_novin();
             break;
-            case 5 : // beh pardakht
+            case 6 : // beh pardakht
                 beh_pardakht();
             break;
-            case 6 : // sepehr saderat
+            case 7 : // sepehr saderat
                 sepehr_saderat();
             break;
             default:

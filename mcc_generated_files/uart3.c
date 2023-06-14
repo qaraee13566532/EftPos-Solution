@@ -313,7 +313,7 @@ bool TakinTasks(uint8_t data)
     uint32_t TempVariable=0,crci;
     switch(SystemParm.Set_Parameter.In_EftPo_Type)
     {
-        case 10:
+        case 11:
             InputDevice_CasScale(data);
         break;
     }
