@@ -224,10 +224,252 @@ void DelayUs(uint32_t DelaySet)
         Nop();
 }  
 
+void send_Novins800_Response_To_Samankish(uint8_t data)
+{
+    uint8_t index=0;
+    for(index=0;index<6;index++)
+       Write_Serial_TO_INPUT(0x00);
+    Write_Serial_TO_INPUT(0x72);
+    
+    if(data!=00)
+    {
+        Write_Serial_TO_INPUT(0x06);
+        Write_Serial_TO_INPUT(0xB1);
+        Write_Serial_TO_INPUT(0x04);
+        Write_Serial_TO_INPUT(0x88);
+        Write_Serial_TO_INPUT(0x02);
+        Write_Serial_TO_INPUT(0x01);
+        Write_Serial_TO_INPUT(data);
+    }
+    else
+    {
+        Write_Serial_TO_INPUT(0x58);
+        Write_Serial_TO_INPUT(0xB1);
+        Write_Serial_TO_INPUT(0x56);
+        Write_Serial_TO_INPUT(0x85);
+        Write_Serial_TO_INPUT(0x06);
+        Write_Serial_TO_INPUT(0x30);
+        Write_Serial_TO_INPUT(0x30);
+        Write_Serial_TO_INPUT(0x30);
+        Write_Serial_TO_INPUT(0x30);
+        Write_Serial_TO_INPUT(0x30);
+        Write_Serial_TO_INPUT(0x31);
+
+        Write_Serial_TO_INPUT(0x8C);
+        Write_Serial_TO_INPUT(0x06);
+        Write_Serial_TO_INPUT(0x30);
+        Write_Serial_TO_INPUT(0x30);
+        Write_Serial_TO_INPUT(0x30);
+        Write_Serial_TO_INPUT(0x30);
+        Write_Serial_TO_INPUT(0x30);
+        Write_Serial_TO_INPUT(0x31);
+
+        Write_Serial_TO_INPUT(0x8B);
+        Write_Serial_TO_INPUT(0x0C);
+        Write_Serial_TO_INPUT(0x30);
+        Write_Serial_TO_INPUT(0x30);
+        Write_Serial_TO_INPUT(0x30);
+        Write_Serial_TO_INPUT(0x30);
+        Write_Serial_TO_INPUT(0x30);
+        Write_Serial_TO_INPUT(0x30);
+        Write_Serial_TO_INPUT(0x30);
+        Write_Serial_TO_INPUT(0x30);
+        Write_Serial_TO_INPUT(0x30);
+        Write_Serial_TO_INPUT(0x30);
+        Write_Serial_TO_INPUT(0x30);
+        Write_Serial_TO_INPUT(0x31);
+
+        Write_Serial_TO_INPUT(0x8A);
+        Write_Serial_TO_INPUT(0x10);
+        Write_Serial_TO_INPUT(0x30);
+        Write_Serial_TO_INPUT(0x30);
+        Write_Serial_TO_INPUT(0x30);
+        Write_Serial_TO_INPUT(0x30);
+        Write_Serial_TO_INPUT(0x30);
+        Write_Serial_TO_INPUT(0x30);
+        Write_Serial_TO_INPUT(0x30);
+        Write_Serial_TO_INPUT(0x30);
+        Write_Serial_TO_INPUT(0x30);
+        Write_Serial_TO_INPUT(0x30);
+        Write_Serial_TO_INPUT(0x30);
+        Write_Serial_TO_INPUT(0x30);
+        Write_Serial_TO_INPUT(0x30);
+        Write_Serial_TO_INPUT(0x30);
+        Write_Serial_TO_INPUT(0x30);
+        Write_Serial_TO_INPUT(0x30);
+
+        Write_Serial_TO_INPUT(0x89);
+        Write_Serial_TO_INPUT(0x08);
+        Write_Serial_TO_INPUT(0x30);
+        Write_Serial_TO_INPUT(0x30);
+        Write_Serial_TO_INPUT(0x30);
+        Write_Serial_TO_INPUT(0x30);
+        Write_Serial_TO_INPUT(0x30);
+        Write_Serial_TO_INPUT(0x30);
+        Write_Serial_TO_INPUT(0x30);
+        Write_Serial_TO_INPUT(0x30);
+
+        Write_Serial_TO_INPUT(0x88);
+        Write_Serial_TO_INPUT(0x02);
+        Write_Serial_TO_INPUT(0x01);
+        Write_Serial_TO_INPUT(data);
+        
+        Write_Serial_TO_INPUT(0x87);
+        Write_Serial_TO_INPUT(0x13);
+        Write_Serial_TO_INPUT(0x30);
+        Write_Serial_TO_INPUT(0x30);
+        Write_Serial_TO_INPUT(0x30);
+        Write_Serial_TO_INPUT(0x30);
+        Write_Serial_TO_INPUT(0x30);
+        Write_Serial_TO_INPUT(0x30);
+        Write_Serial_TO_INPUT(0x30);
+        Write_Serial_TO_INPUT(0x30);
+        Write_Serial_TO_INPUT(0x30);
+        Write_Serial_TO_INPUT(0x30);
+        Write_Serial_TO_INPUT(0x30);
+        Write_Serial_TO_INPUT(0x30);
+        Write_Serial_TO_INPUT(0x30);
+        Write_Serial_TO_INPUT(0x30);
+        Write_Serial_TO_INPUT(0x30);
+        Write_Serial_TO_INPUT(0x30);
+        Write_Serial_TO_INPUT(0x30);
+        Write_Serial_TO_INPUT(0x30);
+        Write_Serial_TO_INPUT(0x30);
+        
+        Write_Serial_TO_INPUT(0x86);
+        Write_Serial_TO_INPUT(0x01);
+        Write_Serial_TO_INPUT(0x31);
+        
+    }
+}
+
+void NovinResponse_To_SamanKishProtocol_1_Response(uint8_t data)
+{
+    static uint8_t InputPriceStatre=0,PriceCent=0,Len;
+    if(InputPriceStatre==0 && data=='R')
+        InputPriceStatre=1;
+    else
+    if(InputPriceStatre==1 && data=='S')
+        InputPriceStatre=2;
+    else
+    if(InputPriceStatre==2 && data=='0')
+        InputPriceStatre=3;
+    else
+    if(InputPriceStatre==3 && data=='0')
+        InputPriceStatre=4;
+    else
+    if(InputPriceStatre==4 && data=='2')
+        InputPriceStatre=5;
+    else
+    if(InputPriceStatre==5)
+    {
+        InputPriceStatre=6;
+        TempBuffer[0]=data;
+    }
+    else
+    if(InputPriceStatre==6)
+    {
+        InputPriceStatre=7;
+        TempBuffer[1]=data;
+    }
+    else
+    if(InputPriceStatre==7)
+    {
+        InputPriceStatre=0;
+        if(TempBuffer[0]=='5' && TempBuffer[1]=='5')
+            send_Novins800_Response_To_Samankish(55);
+        else
+        if(TempBuffer[0]=='1' && TempBuffer[1]=='2')
+            send_Novins800_Response_To_Samankish(63);
+        else
+        if(TempBuffer[0]=='5' && TempBuffer[1]=='0')
+            send_Novins800_Response_To_Samankish(5);
+        else
+        if(TempBuffer[0]=='5' && TempBuffer[1]=='4')
+            send_Novins800_Response_To_Samankish(78);
+        else
+        if(TempBuffer[0]=='5' && TempBuffer[1]=='1')
+            send_Novins800_Response_To_Samankish(51);
+        else
+        if(TempBuffer[0]=='5' && TempBuffer[1]=='6')
+            send_Novins800_Response_To_Samankish(78);
+        else
+        if(TempBuffer[0]=='5' && TempBuffer[1]=='8')
+            send_Novins800_Response_To_Samankish(57);
+        else
+        if(TempBuffer[0]=='6' && TempBuffer[1]=='1')
+            send_Novins800_Response_To_Samankish(61);
+        else
+        if(TempBuffer[0]=='6' && TempBuffer[1]=='5')
+            send_Novins800_Response_To_Samankish(75);
+        else
+        if(TempBuffer[0]=='9' && TempBuffer[1]=='9')
+            send_Novins800_Response_To_Samankish(3);
+        else
+        if(TempBuffer[0]=='0' && TempBuffer[1]=='0')
+            send_Novins800_Response_To_Samankish(0);
+        else
+            send_Novins800_Response_To_Samankish(84);
+    }
+    else
+        InputPriceStatre=0;     
+}
+
+void InputDevice_SamanKishPosProtocol_1(uint8_t data)
+{
+    static uint8_t InputPriceStatre=0,PriceCent=0,Len;
+    uint8_t SettingPartState=0,index;
+    uint32_t TempVariable=0,crci;
+    if(InputPriceStatre==0 && data==0x72)
+        InputPriceStatre=1;
+    else
+    if(InputPriceStatre==1)
+        InputPriceStatre=2;
+    else
+    if(InputPriceStatre==2 && data==0xB1)
+        InputPriceStatre=3;
+    else
+    if(InputPriceStatre==3)
+        InputPriceStatre=4;
+    else
+    if(InputPriceStatre==4 && data==0x81)
+        InputPriceStatre=5;
+    else
+    if(InputPriceStatre==5)
+    {
+        Len=data;
+        InputPriceStatre=6;
+        PriceCent=0;
+        for(index=0;index<10;index++)
+           TempBuffer[index]=0; 
+    }
+    else
+    if(InputPriceStatre==6)
+    {
+        if(Len>0)
+        {
+            TempBuffer[PriceCent]=data;
+            PriceCent++;
+            TempBuffer[PriceCent]=0x00;
+            Len--;
+        }
+        else
+        {
+            InputPriceStatre=0;
+            if(price_received==false)
+            {
+                total_price=Change_To_long(TempBuffer);
+                price_received=1;
+            }
+        }
+    }
+    else
+        InputPriceStatre=0;    
+}
 void InputDevice_CasScale(uint8_t data)
 {
     static uint8_t InputPriceStatre=0,PriceCent=0;
-    uint8_t Len,SettingPartState=0;
+    uint8_t Len,SettingPartState=0,index;
     uint32_t TempVariable=0,crci;
     if(InputPriceStatre==0 && data=='<')
         InputPriceStatre=1;
@@ -254,6 +496,8 @@ void InputDevice_CasScale(uint8_t data)
     {
         InputPriceStatre=8;
         PriceCent=0;
+        for(index=0;index<10;index++)
+           TempBuffer[index]=0; 
     }
     else
     if(InputPriceStatre==8)
@@ -313,8 +557,17 @@ bool TakinTasks(uint8_t data)
     uint32_t TempVariable=0,crci;
     switch(SystemParm.Set_Parameter.In_EftPo_Type)
     {
-        case 11:
+        case 19:
             InputDevice_CasScale(data);
+        break;
+        case 2:
+            InputDevice_SamanKishPosProtocol_1(data);
+        break;
+    }
+    switch(SystemParm.Set_Parameter.Out_EftPo_Type)
+    {
+        case 6:
+            NovinResponse_To_SamanKishProtocol_1_Response(data);
         break;
     }
     if(TakinCalibState==0 && data==0xaa)
@@ -444,6 +697,12 @@ bool TakinTasks(uint8_t data)
         TakinCalibState=0;
     }    
 }
+
+void Write_Serial_TO_INPUT(uint8_t data)
+{
+    UART2_Write(data);
+}
+
 
 
 void Rs232InTasks(void )

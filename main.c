@@ -15,14 +15,13 @@ void Global_Services(void)
 
 
 int main(void)
-
 {
     SYSTEM_Initialize();
     beez_time=BEEP_50ms;
     InitMainPrograms();
 
     for(;;)
-    {
+    {   
         Global_Services();
     }
 }

@@ -94,16 +94,24 @@ const uint8_t * InputBaudrate="\r\n Input baudrate : ";
 const uint8_t * TomanMode="\r\n Toman Mode : ";
 const uint8_t * Active="Enable\r\n";
 const uint8_t * DeActive="Disable\r\n";
-const uint8_t * Psp[12]= {
+const uint8_t * Psp[20]= {
                             "Parsian",
                             "Asan Pardakht",
                             "Saman Kish protocol 1",
-                            "Saman Kish protocol 2",
+                            "Saman Kish protocol 3",
                             "Fanava",
-                            "Pardakht Novin",
+                            "Pardakht Novin 1",
+                            "Pardakht Novin S800",
                             "Beh Pardakht",
                             "Sepehr Saderat",
-                            "Pardakht Novin S800",
+                            "!!!Not defined",
+                            "!!!Not defined",
+                            "!!!Not defined",
+                            "!!!Not defined",
+                            "!!!Not defined",
+                            "!!!Not defined",
+                            "!!!Not defined",
+                            "!!!Not defined",
                             "!!!Not defined",
                             "!!!Not defined",
                             "Cas Scale",
@@ -916,7 +924,7 @@ void saman_kish2(void)
         Write_Serial_Buffer(data[i]);
 }
 
-/*
+
 void pardakht_novin(void)
 {
 	unsigned char Buf[10]={0};
@@ -970,8 +978,8 @@ void pardakht_novin(void)
 	Write_Serial_Buffer('1');
 	Write_Serial_Buffer('1');
 }
-*/
-void pardakht_novin(void)
+
+void pardakht_novin_s800(void)
 {
 	unsigned char Buf[12],outBuf[70];
 	int lenght,number,strCount,index;
@@ -1389,10 +1397,13 @@ void SendPriceToEftPos(void)
             case 5 : // pardakh novin
                 pardakht_novin();
             break;
-            case 6 : // beh pardakht
+            case 6 : // pardakh novin
+                pardakht_novin_s800();
+            break;
+            case 7 : // beh pardakht
                 beh_pardakht();
             break;
-            case 7 : // sepehr saderat
+            case 8 : // sepehr saderat
                 sepehr_saderat();
             break;
             default:
