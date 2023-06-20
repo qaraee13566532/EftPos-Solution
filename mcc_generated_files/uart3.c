@@ -420,31 +420,31 @@ void InputDevice_SamanKishPosProtocol_1(uint8_t data)
     static uint8_t InputPriceStatre=0,PriceCent=0,Len;
     uint8_t SettingPartState=0,index;
     uint32_t TempVariable=0,crci;
-    if(InputPriceStatre==0 && data==0x72)
+  /*  if(InputPriceStatre==0 && data==0x72)
+        InputPriceStatre=1;
+    else
+    if(InputPriceStatre==1)
+        InputPriceStatre=2;
+    else*/
+    if(InputPriceStatre==0 && data==0xB1)
         InputPriceStatre=1;
     else
     if(InputPriceStatre==1)
         InputPriceStatre=2;
     else
-    if(InputPriceStatre==2 && data==0xB1)
+    if(InputPriceStatre==2 && data==0x81)
         InputPriceStatre=3;
     else
     if(InputPriceStatre==3)
-        InputPriceStatre=4;
-    else
-    if(InputPriceStatre==4 && data==0x81)
-        InputPriceStatre=5;
-    else
-    if(InputPriceStatre==5)
     {
         Len=data;
-        InputPriceStatre=6;
+        InputPriceStatre=4;
         PriceCent=0;
         for(index=0;index<10;index++)
            TempBuffer[index]=0; 
     }
     else
-    if(InputPriceStatre==6)
+    if(InputPriceStatre==4)
     {
         if(Len>0)
         {
@@ -700,7 +700,7 @@ bool TakinTasks(uint8_t data)
 
 void Write_Serial_TO_INPUT(uint8_t data)
 {
-    UART2_Write(data);
+    UART3_Write(data);
 }
 
 
